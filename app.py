@@ -43,7 +43,7 @@ def get_or_create_comments_part(doc):
     main_doc_part.relate_to(comments_part, RT.COMMENTS)
     return comments_part
 
-def add_comment_to_paragraph(paragraph, comment_text, author="AI Reviewer"):
+def add_comment_to_paragraph(paragraph, comment_text, author="Author"):
     """Menyisipkan balon komentar dengan logika pemisahan objek high-level dan low-level XML."""
     
     try:
