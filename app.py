@@ -44,96 +44,58 @@ def get_or_create_comments_part(doc):
     return comments_part
 
 def add_comment_to_paragraph(paragraph, comment_text, author="AI Reviewer"):
-    """Menyisipkan balon komentar dengan logika pemisahan objek high-level dan low-level XML."""
-    
+    """Menyisipkan balon komentar dengan proteksi variabel comments_xml."""
     try:
-        if not paragraph.text.strip():
-            st.error("Gagal menyisipkan komentar: Paragraph kosong.")
+        # 0. Validasi input
+        if not paragraph or not paragraph.text.strip():
             return
+
         # 1. Akses part komentar
         doc = paragraph.part.package.main_document_part.document
         comments_part = get_or_create_comments_part(doc)
         
-        # 2. Ambil root XML comments dengan error handling
-        try:
-            if hasattr(comments_part, 'element') and comments_part.element is not None:
-                comments_xml = comments_part.element
-            elif hasattr(comments_part, '_element') and comments_part._element is not None:
-                comments_xml = comments_part._element
-            elif hasattr(comments_part, 'blob') and comments_part.blob is not None:
-                if len(comments_part.blob) > 0:
-                    comments_xml = parse_xml(comments_part.blob)
-            else:
-                # Jika blob kosong, buat elemen baru
-                comments_xml = OxmlElement('w:comments')
-        except Exception as parse_error:
-            # Jika parsing gagal, buat elemen baru
-            st.warning(f"XML comments tidak valid, membuat baru. Error: {str(parse_error)[:50]}")
-            comments_xml = OxmlElement('w:comments')
+        # 2. Inisialisasi awal variabel agar tidak UnboundLocalError
+        comments_xml = None
+
+        # 3. Ambil root XML comments dengan pengecekan bertahap
+        if hasattr(comments_part, 'element') and comments_part.element is not None:
+            comments_xml = comments_part.element
+        elif hasattr(comments_part, '_element') and comments_part._element is not None:
+            comments_xml = comments_part._element
         
-        # 3. Buat ID unik
+        # Fallback jika kedua atribut di atas tidak tersedia
+        if comments_xml is None:
+            try:
+                if hasattr(comments_part, 'blob') and comments_part.blob:
+                    comments_xml = parse_xml(comments_part.blob)
+                else:
+                    comments_xml = OxmlElement('w:comments')
+            except:
+                comments_xml = OxmlElement('w:comments')
+
+        # 4. Buat ID unik
         existing_comments = comments_xml.xpath('//w:comment')
         comment_id = str(len(existing_comments) + 1)
         
-        # 4. Buat elemen komentar dengan struktur lengkap
+        # 5. Buat elemen komentar
         comment = OxmlElement('w:comment')
         comment.set(qn('w:id'), comment_id)
         comment.set(qn('w:author'), author)
         comment.set(qn('w:date'), datetime.now().isoformat())
         comment.set(qn('w:initials'), author[0] if author else 'A')
         
-        # Buat paragraph dalam komentar dengan properties
         p_comm = OxmlElement('w:p')
-        
-        # Tambahkan paragraph properties
-        pPr = OxmlElement('w:pPr')
-        pStyle = OxmlElement('w:pStyle')
-        pStyle.set(qn('w:val'), 'CommentReference')
-        pPr.append(pStyle)
-        p_comm.append(pPr)
-        
-        # Tambahkan reference run
-        r_ref = OxmlElement('w:r')
-        rPr_ref = OxmlElement('w:rPr')
-        rStyle_ref = OxmlElement('w:rStyle')
-        rStyle_ref.set(qn('w:val'), 'CommentReference')
-        rPr_ref.append(rStyle_ref)
-        r_ref.append(rPr_ref)
-        annotationRef = OxmlElement('w:annotationRef')
-        r_ref.append(annotationRef)
-        p_comm.append(r_ref)
-        
-        # Tambahkan text run dengan konten komentar
         r_text = OxmlElement('w:r')
         t_comm = OxmlElement('w:t')
-        t_comm.set(qn('xml:space'), 'preserve')
         t_comm.text = comment_text
         r_text.append(t_comm)
         p_comm.append(r_text)
-        
         comment.append(p_comm)
+        
+        # Tambahkan ke root
         comments_xml.append(comment)
         
-        # PENTING: Serialize comments_xml ke blob agar benar-benar tersimpan
-        try:
-            # Serialize dengan proper XML declaration
-            xml_bytes = etree.tostring(
-                comments_xml,
-                xml_declaration=True,
-                encoding='UTF-8',
-                standalone=True
-            )
-            # Simpan ke _blob comments_part
-            comments_part._blob = xml_bytes
-        except Exception as serialize_error:
-            st.warning(f"Error saat menyimpan XML: {str(serialize_error)[:50]}")
-        
-        # Alternative: Update element juga untuk consistency
-        if hasattr(comments_part, '_element'):
-            comments_part._element = comments_xml
-        
-        # 5. Injeksi Range ke Dokumen Utama
-        # Menggunakan paragraph._p untuk manipulasi XML mentah (RangeStart & End)
+        # 6. Injeksi ke Dokumen Utama
         p_element = paragraph._p
         
         start = OxmlElement('w:commentRangeStart')
@@ -144,13 +106,15 @@ def add_comment_to_paragraph(paragraph, comment_text, author="AI Reviewer"):
         end.set(qn('w:id'), comment_id)
         p_element.append(end)
         
-        # 6. Menambahkan Referensi (Anchor)
-        # PERBAIKAN: Gunakan objek paragraph (bukan _p) untuk add_run()
         new_run = paragraph.add_run() 
         ref = OxmlElement('w:commentReference')
         ref.set(qn('w:id'), comment_id)
         new_run._r.append(ref)
-        
+
+        # 7. Sinkronisasi balik ke part (Penting untuk Cloud)
+        if hasattr(comments_part, '_element'):
+            comments_part._element = comments_xml
+            
     except Exception as e:
         st.error(f"Gagal menyisipkan komentar: {e}")
 
