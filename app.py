@@ -251,7 +251,7 @@ load_dotenv()
 saved_api_key = os.getenv("GEMINI_API_KEY")
 
 st.set_page_config(page_title="AI Reviewer 2026", page_icon="📝", layout="wide")
-st.title("📝 AI Manuscript Reviewer v1.1")
+st.title("📝 AI Manuscript Reviewer")
 
 with st.sidebar:
     st.header("⚙️ Pengaturan")
