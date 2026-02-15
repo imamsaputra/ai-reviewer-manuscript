@@ -55,19 +55,16 @@ def add_comment_to_paragraph(paragraph, comment_text, author="AI Reviewer"):
         comments_part = get_or_create_comments_part(doc)
         
         # 2. Ambil root XML comments dengan error handling
+        comments_xml = OxmlElement('w:comments')  # Inisialisasi default
         try:
             if hasattr(comments_part, 'element') and comments_part.element is not None:
                 comments_xml = comments_part.element
             elif hasattr(comments_part, '_element') and comments_part._element is not None:
                 comments_xml = comments_part._element
-            elif hasattr(comments_part, 'blob') and comments_part.blob is not None:
-                if len(comments_part.blob) > 0:
-                    comments_xml = parse_xml(comments_part.blob)
-            else:
-                # Jika blob kosong, buat elemen baru
-                comments_xml = OxmlElement('w:comments')
+            elif hasattr(comments_part, 'blob') and comments_part.blob is not None and len(comments_part.blob) > 0:
+                comments_xml = parse_xml(comments_part.blob)
         except Exception as parse_error:
-            # Jika parsing gagal, buat elemen baru
+            # Jika parsing gagal, gunakan elemen default yang sudah dibuat
             st.warning(f"XML comments tidak valid, membuat baru. Error: {str(parse_error)[:50]}")
             comments_xml = OxmlElement('w:comments')
         
