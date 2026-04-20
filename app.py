@@ -223,7 +223,8 @@ def extract_text_from_docx(file):
 
 def get_ai_review_structured(text, api_key, role_choice, language_choice, level):
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
+    # model = genai.GenerativeModel('gemini-2.5-flash')
     # model = genai.GenerativeModel('gemini-3-flash-preview')
     
     prompt = f"""
