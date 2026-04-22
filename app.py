@@ -221,11 +221,9 @@ def extract_text_from_docx(file):
     doc = Document(BytesIO(file.getvalue()))
     return "\n".join([para.text for para in doc.paragraphs])
 
-def get_ai_review_structured(text, api_key, role_choice, language_choice, level):
+def get_ai_review_structured(text, api_key, role_choice, language_choice, level, model_choice):
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
-    # model = genai.GenerativeModel('gemini-2.5-flash')
-    # model = genai.GenerativeModel('gemini-3-flash-preview')
+    model = genai.GenerativeModel(model_choice) 
     
     prompt = f"""
     Bertindaklah sebagai {role_choice}. Bahasa: {language_choice}. Level Kritik: {level}.
@@ -253,10 +251,11 @@ load_dotenv()
 saved_api_key = os.getenv("GEMINI_API_KEY")
 
 st.set_page_config(page_title="AI Reviewer 2026", page_icon="📝", layout="wide")
-st.title("📝 AI Manuscript Reviewer")
+st.title("📝 AI Manuscript Reviewer v1.1")
 
 with st.sidebar:
     st.header("⚙️ Pengaturan")
+    model_choice = st.selectbox("Model AI:", ["gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"])
     role = st.selectbox("Peran Reviewer:", ["Reviewer 1 (Substansi)", "Reviewer 2 (Teknis)"])
     output_lang = st.selectbox("Bahasa Hasil:", ["Bahasa Indonesia", "English"])
     critique_level = st.select_slider("Level Kritik:", options=["Cukup Kritis", "Kritis", "Sangat Kritis"], value="Kritis")
@@ -272,7 +271,7 @@ if uploaded_file:
             with st.spinner("Menghubungi AI..."):
                 try:
                     text_content = extract_text_from_docx(uploaded_file)
-                    review_dict = get_ai_review_structured(text_content, api_key, role, output_lang, critique_level)
+                    review_dict = get_ai_review_structured(text_content, api_key, role, output_lang, critique_level, model_choice)
                     st.session_state['review_dict'] = review_dict
                     st.success("Analisis selesai!")
                 except Exception as e:
