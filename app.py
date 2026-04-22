@@ -255,7 +255,7 @@ st.title("📝 AI Manuscript Reviewer v1.1")
 
 with st.sidebar:
     st.header("⚙️ Pengaturan")
-    model_choice = st.selectbox("Model AI:", ["gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"])
+    model_choice = st.selectbox("Model AI:", ["gemini-2.5-flash", "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview"])
     role = st.selectbox("Peran Reviewer:", ["Reviewer 1 (Substansi)", "Reviewer 2 (Teknis)"])
     output_lang = st.selectbox("Bahasa Hasil:", ["Bahasa Indonesia", "English"])
     critique_level = st.select_slider("Level Kritik:", options=["Cukup Kritis", "Kritis", "Sangat Kritis"], value="Kritis")
